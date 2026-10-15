@@ -30,6 +30,9 @@ jobs:
           playwright install --with-deps chromium
 
       - name: Run Playwright tests
+        env:
+          PZ_USERNAME: ${{ secrets.PZ_USERNAME }}
+          PZ_PASSWORD: ${{ secrets.PZ_PASSWORD }}
         run: |
           pytest --html=reports/report.html --self-contained-html
 
