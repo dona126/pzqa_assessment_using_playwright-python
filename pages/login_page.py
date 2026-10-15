@@ -1,43 +1,48 @@
-from playwright.sync_api import Page, Locator, expect
+from playwright.sync_api import Page, Locator
 from pages.base_page import BasePage
 from config.settings import Settings
 
+
 class LoginPage(BasePage):
+    """Encapsulates locators and interactions for the Login route."""
+
     def __init__(self, page: Page):
         super().__init__(page)
-        # Locators from verified HTML
-        self.login_page_container: Locator = page.get_by_test_id("login-page")
-        self.login_form: Locator = page.get_by_test_id("login-form")
-        self.email_input: Locator = page.get_by_test_id("login-email")
-        # Alias so tests referring to username or email both work seamlessly
-        self.username_input: Locator = self.email_input
-        self.password_input: Locator = page.get_by_test_id("login-password")
-        self.submit_btn: Locator = page.get_by_test_id("login-submit")
-        self.error_prompt: Locator = page.locator("[role='alert'], .text-red-500, .text-red-600, form p.text-sm")
+        self.username_input: Locator = page.locator(
+            "input[type='text'], input[type='email'], input#username, input[name='username']"
+        ).first
+        self.password_input: Locator = page.locator("input#password, input[name='password']").first
+        self.submit_btn: Locator = page.locator("button[type='submit'], button:has-text('Sign in'), button:has-text('Login'), [data-testid='login-submit']").first
+        self.error_message: Locator = page.locator(
+            "[role='alert'], .error, [data-testid='login-error'], p.text-red-500"
+        ).first
 
     def open(self):
+        """Navigate directly to the Login page."""
         self.navigate(Settings.LOGIN_URL)
 
-    def login(self, email: str = "", password: str = ""):
-        self.email_input.clear()
-        if email:
-            self.email_input.fill(email)
+    def login(self, username: str, password: str):
+        """Fill credentials and submit the form."""
+        if username:
+            self.username_input.fill(username)
+        else:
+            self.username_input.clear()
 
-        self.password_input.clear()
         if password:
             self.password_input.fill(password)
+        else:
+            self.password_input.clear()
 
         self.submit_btn.click()
 
-    def get_password_field_type(self) -> str:
-        return self.password_input.get_attribute("type") or ""
-
-    def is_email_required(self) -> bool:
-        return self.email_input.evaluate("el => el.validity.valueMissing")
-
-    # Method alias so tests calling is_username_required succeed
     def is_username_required(self) -> bool:
-        return self.is_email_required()
+        """Check HTML5 'required' constraint on username input."""
+        return self.username_input.evaluate("el => el.required")
 
     def is_password_required(self) -> bool:
-        return self.password_input.evaluate("el => el.validity.valueMissing")
+        """Check HTML5 'required' constraint on password input."""
+        return self.password_input.evaluate("el => el.required")
+
+    def get_password_field_type(self) -> str:
+        """Verify password input masking type attribute."""
+        return self.password_input.get_attribute("type") or ""
